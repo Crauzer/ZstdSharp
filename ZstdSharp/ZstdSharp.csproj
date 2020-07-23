@@ -6,15 +6,22 @@
     <Authors>Crauzer</Authors>
     <Company />
     <Platforms>AnyCPU;x64</Platforms>
-    <Version>0.1</Version>
+    <Version>0.2</Version>
     <PackageIcon>zstd.png</PackageIcon>
     <RepositoryUrl>https://github.com/Crauzer/ZstdSharp</RepositoryUrl>
     <PackageTags>compression decompression zstandard zstd library wrapper</PackageTags>
     <PackageReleaseNotes>First release of ZstdSharp.
 
-Provides functions for immediate Compression and Decompression using the zstd Simple API</PackageReleaseNotes>
+Provides functions for immediate Compression and Decompression using the zstd Simple API.
+
+libzstd version: 1.4.5</PackageReleaseNotes>
     <PackageProjectUrl>https://github.com/Crauzer/ZstdSharp</PackageProjectUrl>
     <PackageRequireLicenseAcceptance>false</PackageRequireLicenseAcceptance>
+    <PackageLicenseExpression>GPL-3.0-only</PackageLicenseExpression>
+    <Description>Wrapper for the native Zstandard compression library</Description>
+    <AssemblyVersion>1.4.5.0</AssemblyVersion>
+    <FileVersion>1.4.5.0</FileVersion>
+    <NeutralLanguage>en</NeutralLanguage>
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
