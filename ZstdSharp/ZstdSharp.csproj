@@ -6,6 +6,15 @@
     <Authors>Crauzer</Authors>
     <Company />
     <Platforms>AnyCPU;x64</Platforms>
+    <Version>0.1</Version>
+    <PackageIcon>zstd.png</PackageIcon>
+    <RepositoryUrl>https://github.com/Crauzer/ZstdSharp</RepositoryUrl>
+    <PackageTags>compression decompression zstandard zstd library wrapper</PackageTags>
+    <PackageReleaseNotes>First release of ZstdSharp.
+
+Provides functions for immediate Compression and Decompression using the zstd Simple API</PackageReleaseNotes>
+    <PackageProjectUrl>https://github.com/Crauzer/ZstdSharp</PackageProjectUrl>
+    <PackageRequireLicenseAcceptance>false</PackageRequireLicenseAcceptance>
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
@@ -38,6 +47,12 @@
     <None Include="libzstd_x86.dll">
       <Link>%(FileName)%(Extension)</Link>
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="zstd.png">
+      <Pack>True</Pack>
+      <PackagePath></PackagePath>
     </None>
   </ItemGroup>
 
