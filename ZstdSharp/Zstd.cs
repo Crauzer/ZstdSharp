@@ -9,10 +9,44 @@ namespace ZstdSharp
 {
     public static class Zstd
     {
+        /// <summary>
+        /// The default zstd compression level
+        /// </summary>
+        public static int DefaultCompressionLevel => Native.ZSTD_CLEVEL_DEFAULT;
+
+        /// <summary>
+        /// A <see cref="Range"/> of all valid compression levels
+        /// </summary>
+        public static Range CompressionLevels => new Range(Native.ZSTD_minCLevel(), Native.ZSTD_maxCLevel());
+
+        /// <summary>
+        /// Compresses <paramref name="buffer"/> using the specified <paramref name="compressionLevel"/>
+        /// </summary>
+        /// <param name="buffer">The buffer to compress</param>
+        /// <param name="compressionLevel">The compression level to use</param>
+        /// <returns>The compressed buffer</returns>
+        /// <remarks>
+        /// This method will usually cause a double heap allocation of the compressed buffer,
+        /// it is recommended to use <see cref="Compress(ReadOnlyMemory{byte}, int)"/> if you want to avoid this
+        /// </remarks>
         public static byte[] Compress(byte[] buffer, int compressionLevel = Native.ZSTD_CLEVEL_DEFAULT)
         {
             return Compress(buffer, 0, buffer.Length, compressionLevel);
         }
+        
+        /// <summary>
+        /// Compresses data in <paramref name="buffer"/> starting at <paramref name="offset"/> with <paramref name="size"/>
+        /// using the specified <paramref name="compressionLevel"/>
+        /// </summary>
+        /// <param name="buffer">The buffer to compress</param>
+        /// <param name="offset">The offset at which the data to compress starts</param>
+        /// <param name="size">The size of the data to compress</param>
+        /// <param name="compressionLevel">The compression level to use</param>
+        /// <returns>The compressed buffer</returns>
+        /// <remarks>
+        /// This method will usually cause a double heap allocation of the compressed buffer,
+        /// it is recommended to use <see cref="Compress(ReadOnlyMemory{byte}, int, int, int)"/> if you want to avoid this
+        /// </remarks>
         public static byte[] Compress(byte[] buffer, int offset, int size, int compressionLevel = Native.ZSTD_CLEVEL_DEFAULT)
         {
             if (buffer == null)
@@ -46,22 +80,34 @@ namespace ZstdSharp
 
             // If compressionBound is same as the amount of compressed bytes then we can return the same array
             // otherwise we need to allocate a new one :/
-            if (compressionBound == compressedBufferSize)
+            if (compressionBound != compressedBufferSize)
             {
-                return compressedBuffer;
+                Array.Resize(ref compressedBuffer, (int)compressedBufferSize);
             }
-            else
-            {
-                byte[] actualCompressedBuffer = new byte[compressedBufferSize.ToUInt32()];
-                Array.Copy(compressedBuffer, actualCompressedBuffer, (long)compressedBufferSize);
-                return actualCompressedBuffer;
-            }
+
+            return compressedBuffer;
         }
 
+        /// <summary>
+        /// Compresses <paramref name="memory"/> using the specified <paramref name="compressionLevel"/>
+        /// </summary>
+        /// <param name="memory">The buffer to compress</param>
+        /// <param name="compressionLevel">The compression level to use</param>
+        /// <returns>The compressed buffer wrapped in <see cref="Memory{Byte}"/></returns>
         public static Memory<byte> Compress(ReadOnlyMemory<byte> memory, int compressionLevel = Native.ZSTD_CLEVEL_DEFAULT)
         {
             return Compress(memory, 0, memory.Length, compressionLevel);
         }
+
+        /// <summary>
+        /// Compresses data in <paramref name="memory"/> starting at <paramref name="offset"/> with <paramref name="size"/>
+        /// using the specified <paramref name="compressionLevel"/>
+        /// </summary>
+        /// <param name="memory">The buffer to compress</param>
+        /// <param name="offset">The offset at which the data to compress starts</param>
+        /// <param name="size">The size of the data to compress</param> 
+        /// <param name="compressionLevel">The compression level to use</param>
+        /// <returns>The compressed buffer wrapped in <see cref="Memory{Byte}"/></returns>
         public static Memory<byte> Compress(ReadOnlyMemory<byte> memory, int offset, int size, int compressionLevel = Native.ZSTD_CLEVEL_DEFAULT)
         {
             ValidateCompressionArguments(memory.Length, offset, size, compressionLevel);
@@ -92,10 +138,27 @@ namespace ZstdSharp
             }
         }
 
+        /// <summary>
+        /// Decompresses <paramref name="buffer"/>
+        /// </summary>
+        /// <param name="buffer">The compressed data buffer</param>
+        /// <param name="uncompressedSize">Uncompressed size of <paramref name="buffer"/></param>
+        /// <returns>The uncompressed buffer</returns>
+        /// <remarks>If you do not know the uncompressed size then it is recommended to use <see cref="ZstdStream"/></remarks>
         public static byte[] Decompress(byte[] buffer, int uncompressedSize)
         {
             return Decompress(buffer, 0, buffer.Length, uncompressedSize);
         }
+
+        /// <summary>
+        /// Decompresses data with <paramref name="size"/> at <paramref name="offset"/> in <paramref name="buffer"/>
+        /// </summary>
+        /// <param name="buffer">The compressed data buffer</param>
+        /// <param name="offset">The offset of the compressed data</param>
+        /// <param name="size">The size of the compressed data</param>
+        /// <param name="uncompressedSize">Uncompressed size of <paramref name="buffer"/></param>
+        /// <returns>The uncompressed buffer</returns>
+        /// <remarks>If you do not know the uncompressed size then it is recommended to use <see cref="ZstdStream"/></remarks>
         public static byte[] Decompress(byte[] buffer, int offset, int size, int uncompressedSize)
         {
             ValidateDecompressionArguments(buffer.Length, offset, size, uncompressedSize);
@@ -121,22 +184,35 @@ namespace ZstdSharp
             ThrowOnError(uncompressedBufferSize);
 
             // Check for possiblity that user passed in higher than required uncompressed size
-            if (uncompressedSize == uncompressedBufferSize.ToUInt32())
+            if (uncompressedSize != uncompressedBufferSize.ToUInt32())
             {
-                return uncompressedBuffer;
+                Array.Resize(ref uncompressedBuffer, (int)uncompressedBufferSize);
             }
-            else
-            {
-                byte[] actualUncompressedBuffer = new byte[uncompressedBufferSize.ToUInt32()];
-                Array.Copy(uncompressedBuffer, actualUncompressedBuffer, (long)uncompressedBufferSize.ToUInt64());
-                return actualUncompressedBuffer;
-            }
+
+            return uncompressedBuffer;
         }
 
+        /// <summary>
+        /// Decompresses <paramref name="memory"/>
+        /// </summary>
+        /// <param name="memory">The compressed data buffer</param>
+        /// <param name="uncompressedSize">Uncompressed size of <paramref name="buffer"/></param>
+        /// <returns>The uncompressed buffer</returns>
+        /// <remarks>If you do not know the uncompressed size then it is recommended to use <see cref="ZstdStream"/></remarks>
         public static Memory<byte> Decompress(ReadOnlyMemory<byte> memory, int uncompressedSize)
         {
             return Decompress(memory, 0, memory.Length, uncompressedSize);
         }
+
+        /// <summary>
+        /// Decompresses data with <paramref name="size"/> at <paramref name="offset"/> in <paramref name="memory"/>
+        /// </summary>
+        /// <param name="memory">The compressed data buffer</param>
+        /// <param name="offset">The offset of the compressed data</param>
+        /// <param name="size">The size of the compressed data</param>
+        /// <param name="uncompressedSize">Uncompressed size of <paramref name="buffer"/></param>
+        /// <returns>The uncompressed buffer</returns>
+        /// <remarks>If you do not know the uncompressed size then it is recommended to use <see cref="ZstdStream"/></remarks>
         public static Memory<byte> Decompress(ReadOnlyMemory<byte> memory, int offset, int size, int uncompressedSize)
         {
             ValidateDecompressionArguments(memory.Length, offset, size, uncompressedSize);
