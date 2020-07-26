@@ -30,7 +30,7 @@ namespace ZstdSharp
         public override bool CanSeek => false;
         public override bool CanWrite => this._stream.CanWrite && this.Mode == ZstdStreamMode.Compress;
         public override long Length => throw new NotSupportedException();
-        public override long Position 
+        public override long Position
         {
             get => throw new NotSupportedException();
             set => throw new NotSupportedException();
@@ -83,7 +83,7 @@ namespace ZstdSharp
 
         private void InitializeZstdStream()
         {
-            if(this.Mode == ZstdStreamMode.Compress)
+            if (this.Mode == ZstdStreamMode.Compress)
             {
                 UIntPtr result;
                 if (this.Dictionary == null)
@@ -97,7 +97,7 @@ namespace ZstdSharp
 
                 Zstd.ThrowOnError(result);
             }
-            else if(this.Mode == ZstdStreamMode.Decompress)
+            else if (this.Mode == ZstdStreamMode.Decompress)
             {
                 UIntPtr result;
                 if (this.Dictionary == null)

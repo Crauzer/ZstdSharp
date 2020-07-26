@@ -9,13 +9,25 @@ namespace ZstdSharp.Sandbox
         {
             byte[] uncompressed = File.ReadAllBytes("mozilla");
 
-            Memory<byte> compressedMemory = Zstd.Compress(uncompressed.AsMemory());
-            byte[] compressed = Zstd.Compress(uncompressed);
+            //Memory<byte> compressedMemory = Zstd.Compress(uncompressed.AsMemory());
+            byte[] compressed2 = Zstd.Compress(uncompressed);
+            //
+            //byte[] uncompressed2 = Zstd.Decompress(compressed, uncompressed.Length);
+            //Memory<byte> uncompressedMemory = Zstd.Decompress(compressedMemory, uncompressed.Length);
+            //
+            //ZstdStream stream = new ZstdStream(new MemoryStream(), ZstdStreamMode.Compress);
 
-            byte[] uncompressed2 = Zstd.Decompress(compressed, uncompressed.Length);
-            Memory<byte> uncompressedMemory = Zstd.Decompress(compressedMemory, uncompressed.Length);
+            Memory<byte> compressed;
+            using (ZstdCompressionContext context = new ZstdCompressionContext())
+            {
+                compressed = context.Compress(uncompressed.AsMemory());
+            }
 
-            ZstdStream stream = new ZstdStream(new MemoryStream(), ZstdStreamMode.Compress);
+            Memory<byte> uncompressed2;
+            using (ZstdDecompressionContext context = new ZstdDecompressionContext())
+            {
+                uncompressed2 = context.Decompress(compressed, uncompressed.Length);
+            }
         }
     }
 }

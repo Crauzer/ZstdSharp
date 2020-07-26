@@ -6,12 +6,14 @@ using System.Text;
 
 namespace ZstdSharp
 {
-    public class ZstdDictionary: IDisposable
+    public class ZstdDictionary : IDisposable
     {
         private readonly byte[] _dictionaryBuffer;
 
         private IntPtr _decompressionDictionary;
         private Dictionary<int, IntPtr> _compressionDictionaries = new Dictionary<int, IntPtr>();
+
+        private bool _isDisposed;
 
         public ZstdDictionary(string dictionaryLocation)
         {
@@ -26,9 +28,14 @@ namespace ZstdSharp
             dictionaryStream.Read(this._dictionaryBuffer, offset, size);
         }
 
+        ~ZstdDictionary()
+        {
+            Dispose(false);
+        }
+
         internal IntPtr GetCompressionDictionary(int compressionLevel)
         {
-            if(!this._compressionDictionaries.ContainsKey(compressionLevel))
+            if (!this._compressionDictionaries.ContainsKey(compressionLevel))
             {
                 this._compressionDictionaries.Add(compressionLevel, GetCompressionDictionary(compressionLevel));
             }
@@ -38,7 +45,7 @@ namespace ZstdSharp
 
         internal IntPtr GetDecompressionDictionary()
         {
-            if(this._decompressionDictionary == IntPtr.Zero)
+            if (this._decompressionDictionary == IntPtr.Zero)
             {
                 this._decompressionDictionary = CreateDecompressionDictionary();
             }
@@ -70,16 +77,27 @@ namespace ZstdSharp
 
         public void Dispose()
         {
-            if(this._decompressionDictionary != IntPtr.Zero)
-            {
-                Native.ZSTD_freeDDict(this._decompressionDictionary);
-                this._decompressionDictionary = IntPtr.Zero;
-            }
+            Dispose(true);
+            GC.SuppressFinalize(this);
+        }
 
-            foreach (var compressionDictionary in this._compressionDictionaries.ToList()) 
+        protected virtual void Dispose(bool disposing)
+        {
+            if (!this._isDisposed)
             {
-                Native.ZSTD_freeCDict(compressionDictionary.Value);
-                this._compressionDictionaries.Remove(compressionDictionary.Key);
+                if (this._decompressionDictionary != IntPtr.Zero)
+                {
+                    Native.ZSTD_freeDDict(this._decompressionDictionary);
+                    this._decompressionDictionary = IntPtr.Zero;
+                }
+
+                foreach (var compressionDictionary in this._compressionDictionaries.ToList())
+                {
+                    Native.ZSTD_freeCDict(compressionDictionary.Value);
+                    this._compressionDictionaries.Remove(compressionDictionary.Key);
+                }
+
+                this._isDisposed = true;
             }
         }
     }

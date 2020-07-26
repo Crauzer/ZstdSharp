@@ -19,6 +19,8 @@ namespace ZstdSharp
         /// </summary>
         public static Range CompressionLevels => new Range(Native.ZSTD_minCLevel(), Native.ZSTD_maxCLevel());
 
+        // -------------- COMPRESSION ---------------- \\
+
         /// <summary>
         /// Compresses <paramref name="buffer"/> using the specified <paramref name="compressionLevel"/>
         /// </summary>
@@ -33,7 +35,7 @@ namespace ZstdSharp
         {
             return Compress(buffer, 0, buffer.Length, compressionLevel);
         }
-        
+
         /// <summary>
         /// Compresses data in <paramref name="buffer"/> starting at <paramref name="offset"/> with <paramref name="size"/>
         /// using the specified <paramref name="compressionLevel"/>
@@ -45,7 +47,7 @@ namespace ZstdSharp
         /// <returns>The compressed buffer</returns>
         /// <remarks>
         /// This method will usually cause a double heap allocation of the compressed buffer,
-        /// it is recommended to use <see cref="Compress(ReadOnlyMemory{byte}, int, int, int)"/> if you want to avoid this
+        /// it is recommended to use <see cref="Compress(ReadOnlyMemory{byte}, int, int, int)"/> if you want to avoid this.
         /// </remarks>
         public static byte[] Compress(byte[] buffer, int offset, int size, int compressionLevel = Native.ZSTD_CLEVEL_DEFAULT)
         {
@@ -64,14 +66,12 @@ namespace ZstdSharp
             unsafe
             {
                 fixed (byte* compressedBufferPointer = compressedBuffer)
+                fixed (byte* uncompressedBufferPointer = buffer)
                 {
-                    fixed (byte* uncompressedBufferPointer = buffer)
-                    {
-                        compressedBufferSize = Native.ZSTD_compress(
-                            (IntPtr)compressedBufferPointer, compressionBound,
-                            (IntPtr)(uncompressedBufferPointer + offset), new Size((uint)size),
-                            compressionLevel);
-                    }
+                    compressedBufferSize = Native.ZSTD_compress(
+                        (IntPtr)compressedBufferPointer, compressionBound,
+                        (IntPtr)(uncompressedBufferPointer + offset), (Size)size,
+                        compressionLevel);
                 }
             }
 
@@ -138,6 +138,8 @@ namespace ZstdSharp
             }
         }
 
+        // -------------- DECOMPRESSION ---------------- \\
+
         /// <summary>
         /// Decompresses <paramref name="buffer"/>
         /// </summary>
@@ -170,13 +172,11 @@ namespace ZstdSharp
             unsafe
             {
                 fixed (byte* uncompressedBufferPtr = uncompressedBuffer)
+                fixed (byte* compressedBufferPtr = buffer)
                 {
-                    fixed (byte* compressedBufferPtr = buffer)
-                    {
-                        uncompressedBufferSize = Native.ZSTD_decompress(
-                            (IntPtr)uncompressedBufferPtr, (Size)uncompressedSize,
-                            (IntPtr)(compressedBufferPtr + offset), (Size)size);
-                    }
+                    uncompressedBufferSize = Native.ZSTD_decompress(
+                        (IntPtr)uncompressedBufferPtr, (Size)uncompressedSize,
+                        (IntPtr)(compressedBufferPtr + offset), (Size)size);
                 }
             }
 
@@ -241,12 +241,14 @@ namespace ZstdSharp
             }
         }
 
-        private static void ValidateCompressionArguments(int bufferLength, int offset, int size, int compressionLevel)
+        // -------------- HELPER FUNCTIONS ---------------- \\
+
+        internal static void ValidateCompressionArguments(int bufferLength, int offset, int size, int compressionLevel)
         {
             ValidateBufferParameters(bufferLength, offset, size);
             ThrowOnInvalidCompressionLevel(compressionLevel);
         }
-        private static void ValidateDecompressionArguments(int bufferLength, int offset, int size, int uncompressedSize)
+        internal static void ValidateDecompressionArguments(int bufferLength, int offset, int size, int uncompressedSize)
         {
             ValidateBufferParameters(bufferLength, offset, size);
 
@@ -255,7 +257,7 @@ namespace ZstdSharp
                 throw new ArgumentOutOfRangeException(nameof(uncompressedSize), $"{nameof(uncompressedSize)} is <= 0");
             }
         }
-        private static void ValidateBufferParameters(int bufferLength, int offset, int size)
+        internal static void ValidateBufferParameters(int bufferLength, int offset, int size)
         {
             if (offset < 0 || offset > bufferLength)
             {
@@ -292,5 +294,12 @@ namespace ZstdSharp
                     nameof(compressionLevel), $"{nameof(compressionLevel)} must be between {minCompressionLevel} - {maxCompressionLevel}");
             }
         }
+    }
+
+    public enum ZstdResetDirective
+    {
+        ResetSessionOnly = 1,
+        ResetParameters = 2,
+        ResetSessionAndParameters = 3
     }
 }

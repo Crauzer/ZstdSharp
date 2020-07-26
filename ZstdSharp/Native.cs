@@ -59,6 +59,87 @@ namespace ZstdSharp
         internal static extern Size ZSTD_decompress(IntPtr destination, Size destinationCapacity, IntPtr source, Size compressedSize);
         #endregion
 
+        #region Context API
+
+        #region Compression
+
+        [DllImport(ZSTD_DLL)]
+        internal static extern IntPtr ZSTD_createCCtx();
+
+        [DllImport(ZSTD_DLL)]
+        internal static extern Size ZSTD_freeCCtx(IntPtr context);
+
+        [DllImport(ZSTD_DLL)]
+        internal static extern Size ZSTD_compressCCtx(IntPtr context, IntPtr destination, Size destinationCapacity, IntPtr source, Size sourceSize, int compressionLevel);
+
+        #endregion
+
+        #region Decompression
+
+        [DllImport(ZSTD_DLL)]
+        internal static extern IntPtr ZSTD_createDCtx();
+
+        [DllImport(ZSTD_DLL)]
+        internal static extern Size ZSTD_freeDCtx(IntPtr context);
+
+        [DllImport(ZSTD_DLL)]
+        internal static extern Size ZSTD_compressDCtx(IntPtr context, IntPtr destination, Size destinationCapacity, IntPtr source, IntPtr sourceSize);
+
+        #endregion
+
+        #endregion
+
+        #region Advanced API
+
+        #region Compression
+
+        [DllImport(ZSTD_DLL)]
+        internal static extern ZstdBounds ZSTD_cParam_getBounds(ZstdCompressionParameter parameter);
+
+        [DllImport(ZSTD_DLL)]
+        internal static extern Size ZSTD_CCtx_setParameter(IntPtr context, ZstdCompressionParameter parameter, int value);
+
+        [DllImport(ZSTD_DLL)]
+        internal static extern Size ZSTD_CCtx_getParameter(IntPtr context, ZstdCompressionParameter parameter, IntPtr value);
+
+        [DllImport(ZSTD_DLL)]
+        internal static extern Size ZSTD_CCtx_reset(IntPtr context, ZstdResetDirective resetDirective);
+
+        [DllImport(ZSTD_DLL)]
+        internal static extern Size ZSTD_compress2(IntPtr context, IntPtr destination, Size destinationCapacity, IntPtr source, Size sourceSize);
+
+        [DllImport(ZSTD_DLL)]
+        internal static extern Size ZSTD_compress_usingCDict(IntPtr context,
+            IntPtr destination, Size destionationCapacity,
+            IntPtr source, Size sourceSize, IntPtr dictionary);
+
+        #endregion
+
+        #region Decompression
+
+        [DllImport(ZSTD_DLL)]
+        internal static extern ZstdBounds ZSTD_dParam_getBounds(ZstdDecompressionParameter parameter);
+
+        [DllImport(ZSTD_DLL)]
+        internal static extern Size ZSTD_DCtx_setParameter(IntPtr context, ZstdDecompressionParameter parameter, int value);
+
+        [DllImport(ZSTD_DLL)]
+        internal static extern Size ZSTD_DCtx_reset(IntPtr context, ZstdResetDirective resetDirective);
+
+        [DllImport(ZSTD_DLL)]
+        internal static extern Size ZSTD_decompress_usingDDict(IntPtr context,
+            IntPtr destination, Size destinationCapacity,
+            IntPtr source, Size sourceSize, IntPtr dictionary);
+
+        [DllImport(ZSTD_DLL)]
+        internal static extern Size ZSTD_decompressDCtx(IntPtr context,
+            IntPtr destination, Size destinationCapacity,
+            IntPtr source, Size sourceSize);
+
+        #endregion
+
+        #endregion
+
         #region Helper Functions
         [DllImport(ZSTD_DLL)]
         internal static extern Size ZSTD_compressBound(Size sourceSize);
@@ -163,5 +244,15 @@ namespace ZstdSharp
         internal IntPtr Data;
         internal Size Size;
         internal Size Position;
+    }
+
+    [StructLayout(LayoutKind.Sequential)]
+    internal struct ZstdBounds
+    {
+        internal Size ErrorCode;
+        internal int LowerBound;
+        internal int UpperBound;
+
+        internal Range GetRange() => new Range(this.LowerBound, this.UpperBound);
     }
 }
