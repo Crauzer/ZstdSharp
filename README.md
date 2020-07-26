@@ -1,4 +1,4 @@
-# ZstdSharp
+# ZstdSharp ![Nuget](https://img.shields.io/nuget/dt/ZstdSharp?color=blue&logo=nuget&style=flat-square)
 
 ZstdSharp is a wrapper for the [native Zstandard library](https://github.com/facebook/zstd).
 
