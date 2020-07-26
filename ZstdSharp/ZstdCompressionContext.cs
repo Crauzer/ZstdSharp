@@ -78,24 +78,22 @@ namespace ZstdSharp
             unsafe
             {
                 fixed (byte* compressedBufferPointer = compressedBuffer)
+                fixed (byte* uncompressedBufferPointer = buffer)
                 {
-                    fixed (byte* uncompressedBufferPointer = buffer)
+                    if (this.Dictionary == null)
                     {
-                        if (this.Dictionary == null)
-                        {
-                            compressedBufferSize = Native.ZSTD_compress2(
-                                this._context,
-                                (IntPtr)compressedBufferPointer, compressionBound,
-                                (IntPtr)(uncompressedBufferPointer + offset), (Size)size);
-                        }
-                        else
-                        {
-                            compressedBufferSize = Native.ZSTD_compress_usingCDict(
-                                this._context,
-                                (IntPtr)compressedBufferPointer, compressionBound,
-                                (IntPtr)(uncompressedBufferPointer + offset), (Size)size,
-                                this.Dictionary.GetCompressionDictionary(compressionLevel));
-                        }
+                        compressedBufferSize = Native.ZSTD_compress2(
+                            this._context,
+                            (IntPtr)compressedBufferPointer, compressionBound,
+                            (IntPtr)(uncompressedBufferPointer + offset), (Size)size);
+                    }
+                    else
+                    {
+                        compressedBufferSize = Native.ZSTD_compress_usingCDict(
+                            this._context,
+                            (IntPtr)compressedBufferPointer, compressionBound,
+                            (IntPtr)(uncompressedBufferPointer + offset), (Size)size,
+                            this.Dictionary.GetCompressionDictionary(compressionLevel));
                     }
                 }
             }
