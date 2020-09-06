@@ -17,17 +17,14 @@ namespace ZstdSharp
     {
         internal const int ZSTD_CLEVEL_DEFAULT = 3;
 
-        #if X64
-        private const string ZSTD_DLL = "libzstd_x64";
-        #else
-        private const string ZSTD_DLL = "libzstd_x86";
-        #endif
+        private const string ZSTD_DLL = "libzstd";
 
         static Native()
         {
             string assemblyLocation = Path.GetDirectoryName(typeof(Native).Assembly.Location);
-            string zstdLibrary = Path.Combine(assemblyLocation, ZSTD_DLL);
-            LoadLibraryEx(zstdLibrary, IntPtr.Zero, LoadLibraryFlags.LOAD_LIBRARY_SEARCH_APPLICATION_DIR);
+            string architecture = Environment.Is64BitProcess ? "x64" : "x86";
+
+            SetDllDirectory(Path.Combine(assemblyLocation, architecture));
         }
 
         #region WinApi
@@ -49,6 +46,9 @@ namespace ZstdSharp
 
         [DllImport("kernel32", SetLastError = true)]
         private static extern IntPtr LoadLibraryEx(string lpFileName, IntPtr hReservedNull, LoadLibraryFlags dwFlags);
+
+        [DllImport("kernel32", CharSet = CharSet.Auto)]
+        private static extern bool SetDllDirectory(string lpPathName);
         #endregion
 
         #region Simple API
