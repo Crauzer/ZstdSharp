@@ -6,7 +6,7 @@
     <Authors>Crauzer</Authors>
     <Company />
     <Platforms>x64</Platforms>
-    <Version>0.7</Version>
+    <Version>0.7.1</Version>
     <PackageIcon>zstd.png</PackageIcon>
     <RepositoryUrl>https://github.com/Crauzer/ZstdSharp</RepositoryUrl>
     <PackageTags>compression decompression zstandard zstd library wrapper</PackageTags>

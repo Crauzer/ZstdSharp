@@ -2,17 +2,17 @@
 <Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
 
   <ItemGroup>
-    <None Include="$(MSBuildThisFileDirectory)libzstd.dll" Condition=" '$(OS)' == 'Windows_NT' ">
+    <None Include="$(MSBuildThisFileDirectory)libzstd.dll">
       <Link>%(FileName)%(Extension)</Link>
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
 
-    <None Include="$(MSBuildThisFileDirectory)libzstd.so" Condition=" '$([System.Runtime.InteropServices.RuntimeInformation]::IsOSPlatform($([System.Runtime.InteropServices.OSPlatform]::Linux)))' ">
+    <None Include="$(MSBuildThisFileDirectory)libzstd.so">
       <Link>%(FileName)%(Extension)</Link>
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
 
-    <None Include="$(MSBuildThisFileDirectory)libzstd.dylib" Condition=" '$([System.Runtime.InteropServices.RuntimeInformation]::IsOSPlatform($([System.Runtime.InteropServices.OSPlatform]::OSX)))' ">
+    <None Include="$(MSBuildThisFileDirectory)libzstd.dylib">
       <Link>%(FileName)%(Extension)</Link>
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
