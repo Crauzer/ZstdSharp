@@ -239,7 +239,7 @@ namespace ZstdSharp
     }
 
     [StructLayout(LayoutKind.Sequential)]
-    internal struct ZstdBuffer
+    internal class ZstdBuffer
     {
         internal IntPtr Data;
         internal Size Size;
@@ -247,7 +247,7 @@ namespace ZstdSharp
     }
 
     [StructLayout(LayoutKind.Sequential)]
-    internal struct ZstdBounds
+    internal class ZstdBounds
     {
         internal Size ErrorCode;
         internal int LowerBound;

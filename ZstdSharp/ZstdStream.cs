@@ -2,6 +2,7 @@
 using System.Buffers;
 using System.Collections.Generic;
 using System.IO;
+using System.Runtime.InteropServices;
 using System.Text;
 
 namespace ZstdSharp
@@ -39,13 +40,20 @@ namespace ZstdSharp
         private readonly Stream _stream;
         private readonly bool _leaveOpen;
 
-        private readonly byte[] _data;
+        private bool _isClosed;
+        private bool _isDisposed;
+
+        private byte[] _scratchData;
+        private int _scratchDataSize;
+        private int _scratchDataPosition;
+        private bool _skipDataRead;
+        private bool _isDataDepleted;
 
         private readonly uint _zstdStreamInputSize;
         private readonly uint _zstdStreamOutputSize;
         private readonly IntPtr _zstdStream;
-        private readonly ZstdBuffer _zstdInputBuffer = new ZstdBuffer();
-        private readonly ZstdBuffer _zstdOutputBuffer = new ZstdBuffer();
+        private ZstdBuffer _zstdInputBuffer = new ZstdBuffer();
+        private ZstdBuffer _zstdOutputBuffer = new ZstdBuffer();
 
         public ZstdStream(Stream stream, int compressionLevel, bool leaveOpen = false) : this(stream, compressionLevel, null, leaveOpen) { }
         public ZstdStream(Stream stream, int compressionLevel, ZstdDictionary dictionary, bool leaveOpen = false)
@@ -68,14 +76,14 @@ namespace ZstdSharp
                 this._zstdStreamInputSize = Native.ZSTD_CStreamInSize().ToUInt32();
                 this._zstdStreamOutputSize = Native.ZSTD_CStreamOutSize().ToUInt32();
                 this._zstdStream = Native.ZSTD_createCStream();
-                this._data = new byte[this._zstdStreamOutputSize];
+                this._scratchData = new byte[this._zstdStreamOutputSize];
             }
             else if (mode == ZstdStreamMode.Decompress)
             {
                 this._zstdStreamInputSize = Native.ZSTD_DStreamInSize().ToUInt32();
                 this._zstdStreamOutputSize = Native.ZSTD_DStreamOutSize().ToUInt32();
                 this._zstdStream = Native.ZSTD_createDStream();
-                this._data = new byte[this._zstdStreamInputSize];
+                this._scratchData = new byte[this._zstdStreamInputSize];
             }
 
             InitializeZstdStream();
@@ -115,37 +123,177 @@ namespace ZstdSharp
 
         public override void Flush()
         {
-            throw new NotImplementedException();
+            if (this.Mode == ZstdStreamMode.Compress)
+            {
+                FlushZstdStream();
+
+                this._stream.Flush();
+            }
+        }
+        public override void Close()
+        {
+            if (!this._isClosed)
+            {
+                DisposeResources(true);
+
+                this._isClosed = true;
+                base.Close();
+            }
+        }
+        private void DisposeResources(bool flush)
+        {
+            if (this.Mode == ZstdStreamMode.Compress)
+            {
+                if (flush)
+                {
+                    FlushZstdStream();
+                    EndZstdStream();
+
+                    this._stream.Flush();
+                }
+
+                Native.ZSTD_freeCStream(this._zstdStream);
+
+                if (!this._leaveOpen) this._stream.Close();
+            }
+            else if (this.Mode == ZstdStreamMode.Decompress)
+            {
+                Native.ZSTD_freeDStream(this._zstdStream);
+
+                if (!this._leaveOpen) this._stream.Close();
+            }
+        }
+        private void FlushZstdStream()
+        {
+            unsafe
+            {
+                fixed(byte* scratchDataPr = this._scratchData)
+                {
+                    this._zstdOutputBuffer.Data = (IntPtr)scratchDataPr;
+                    this._zstdOutputBuffer.Size = (UIntPtr)this._zstdStreamOutputSize;
+                    this._zstdOutputBuffer.Position = UIntPtr.Zero;
+
+                    Zstd.ThrowOnError(Native.ZSTD_flushStream(this._zstdStream, this._zstdOutputBuffer));
+
+                    this._stream.Write(this._scratchData, 0, (int)this._zstdOutputBuffer.Position);
+                }
+            }
+        }
+        private void EndZstdStream()
+        {
+            unsafe
+            {
+                fixed (byte* scratchDataPr = this._scratchData)
+                {
+                    this._zstdOutputBuffer.Data = (IntPtr)scratchDataPr;
+                    this._zstdOutputBuffer.Size = (UIntPtr)this._zstdStreamOutputSize;
+                    this._zstdOutputBuffer.Position = UIntPtr.Zero;
+
+                    Zstd.ThrowOnError(Native.ZSTD_endStream(this._zstdStream, this._zstdOutputBuffer));
+
+                    this._stream.Write(this._scratchData, 0, (int)this._zstdOutputBuffer.Position);
+                }
+            }
         }
 
         public override int Read(byte[] buffer, int offset, int count)
         {
-            throw new NotImplementedException();
-            //unsafe
-            //{
-            //    fixed (byte* bufferPtr = buffer)
-            //    fixed (byte* dataPtr = this._data)
-            //    {
-            //        while(count > 0)
-            //        {
-            //            int inputBufferSize = Math.Min((int)this._zstdStreamInputSize, count);
-            //
-            //
-            //        }
-            //    }
-            //}
-        }
+            if(!this.CanRead)
+            {
+                throw new NotSupportedException();
+            }
 
+            int bytesDecompressed = 0;
+
+            unsafe
+            {
+                fixed (byte* outputBufferPtr = buffer)
+                fixed (byte* scratchDataPtr = this._scratchData)
+                {
+                    while (count > 0)
+                    {
+                        int inputSize = this._scratchDataSize - this._scratchDataPosition;
+
+                        if(inputSize <= 0 && !this._isDataDepleted && !this._skipDataRead)
+                        {
+                            this._scratchDataSize = this._stream.Read(this._scratchData, 0, (int)this._zstdStreamInputSize);
+                            this._isDataDepleted = this._scratchDataSize <= 0;
+                            this._scratchDataPosition = 0;
+                            inputSize = this._scratchDataSize <= 0 ? 0 : this._scratchDataSize;
+
+                            this._skipDataRead = true;
+                        }
+
+                        this._zstdInputBuffer.Data = inputSize <= 0 ? IntPtr.Zero : (IntPtr)scratchDataPtr + this._scratchDataPosition;
+                        this._zstdInputBuffer.Size = inputSize <= 0 ? UIntPtr.Zero : (UIntPtr)inputSize;
+                        this._zstdInputBuffer.Position = UIntPtr.Zero;
+
+                        this._zstdOutputBuffer.Data = (IntPtr)outputBufferPtr + offset;
+                        this._zstdOutputBuffer.Size = (UIntPtr)count;
+                        this._zstdOutputBuffer.Position = UIntPtr.Zero;
+
+                        UIntPtr result = Native.ZSTD_decompressStream(this._zstdStream, this._zstdOutputBuffer, this._zstdInputBuffer);
+                        Zstd.ThrowOnError(result);
+
+                        int outputBufferPosition = (int)this._zstdOutputBuffer.Position;
+                        if (outputBufferPosition == 0)
+                        {
+                            if (this._isDataDepleted) break;
+
+                            this._skipDataRead = false;
+                        }
+                        
+                        bytesDecompressed += outputBufferPosition;
+                        offset += outputBufferPosition;
+                        count -= outputBufferPosition;
+
+                        this._scratchDataPosition += (int)this._zstdInputBuffer.Position;
+                    }
+                } 
+            }
+
+            return bytesDecompressed;
+        }
         public override void Write(byte[] buffer, int offset, int count)
         {
-            throw new NotImplementedException();
+            if(!this.CanWrite)
+            {
+                throw new NotSupportedException();
+            }
+
+            unsafe
+            {
+                fixed(byte* outputBufferPtr = buffer)
+                fixed(byte* scratchDataPtr = this._scratchData)
+                {
+                    while(count > 0)
+                    {
+                        uint inputSize = Math.Min((uint)count, this._zstdStreamOutputSize);
+
+                        this._zstdOutputBuffer.Data = (IntPtr)scratchDataPtr;
+                        this._zstdOutputBuffer.Size = (UIntPtr)this._zstdStreamOutputSize;
+                        this._zstdOutputBuffer.Position = UIntPtr.Zero;
+
+                        this._zstdInputBuffer.Data = (IntPtr)outputBufferPtr + offset;
+                        this._zstdInputBuffer.Size = (UIntPtr)inputSize;
+                        this._zstdInputBuffer.Position = UIntPtr.Zero;
+
+                        Zstd.ThrowOnError(Native.ZSTD_compressStream(this._zstdStream, this._zstdOutputBuffer, this._zstdInputBuffer));
+
+                        this._stream.Write(this._scratchData, 0, (int)this._zstdOutputBuffer.Position);
+
+                        int inputBufferPosition = (int)this._zstdInputBuffer.Position;
+                        offset += inputBufferPosition;
+                        count -= inputBufferPosition;
+                    }
+                }
+            }
         }
 
         public override long Seek(long offset, SeekOrigin origin)
         {
             throw new NotSupportedException();
         }
-
         public override void SetLength(long value)
         {
             throw new NotSupportedException();
@@ -154,6 +302,19 @@ namespace ZstdSharp
         protected override void Dispose(bool disposing)
         {
             base.Dispose(disposing);
+
+            if(this._isDisposed)
+            {
+                if (!this._isClosed) 
+                {
+                    DisposeResources(false);
+                }
+
+                ArrayPool<byte>.Shared.Return(this._scratchData, clearArray: false);
+                this._scratchData = null;
+
+                this._isDisposed = true;
+            }
         }
     }
 
