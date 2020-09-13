@@ -29,7 +29,7 @@ jobs:
     - name: Build
       run: dotnet build ZstdSharp --configuration Release --no-restore
     - name: Test
-      run: dotnet test --no-restore --verbosity normal
+      run: dotnet test ZstdSharp.Tests --no-restore --verbosity normal
     - name: Publish
       if: success()
       run: dotnet publish --no-build -c Release -o release
