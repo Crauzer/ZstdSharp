@@ -5,16 +5,12 @@
     <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
     <Authors>Crauzer</Authors>
     <Company />
-    <Platforms>AnyCPU;x64</Platforms>
-    <Version>0.6</Version>
+    <Platforms>x64</Platforms>
+    <Version>0.7</Version>
     <PackageIcon>zstd.png</PackageIcon>
     <RepositoryUrl>https://github.com/Crauzer/ZstdSharp</RepositoryUrl>
     <PackageTags>compression decompression zstandard zstd library wrapper</PackageTags>
-    <PackageReleaseNotes>First release of ZstdSharp.
-
-Provides functions for immediate Compression and Decompression using the zstd Simple API.
-
-libzstd version: 1.4.5</PackageReleaseNotes>
+    <PackageReleaseNotes></PackageReleaseNotes>
     <PackageProjectUrl>https://github.com/Crauzer/ZstdSharp</PackageProjectUrl>
     <PackageRequireLicenseAcceptance>false</PackageRequireLicenseAcceptance>
     <PackageLicenseExpression>GPL-3.0-only</PackageLicenseExpression>
@@ -22,6 +18,7 @@ libzstd version: 1.4.5</PackageReleaseNotes>
     <AssemblyVersion>1.4.5.0</AssemblyVersion>
     <FileVersion>1.4.5.0</FileVersion>
     <NeutralLanguage>en</NeutralLanguage>
+    <Configurations>Debug;Release</Configurations>
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
@@ -30,36 +27,8 @@ libzstd version: 1.4.5</PackageReleaseNotes>
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
-    <DefineConstants>TRACE;X64</DefineConstants>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
   </PropertyGroup>
-
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|AnyCPU'">
-    <DefineConstants>TRACE;X86</DefineConstants>
-    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
-  </PropertyGroup>
-
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|AnyCPU'">
-    <DefineConstants>TRACE;X86</DefineConstants>
-    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
-  </PropertyGroup>
-
-  <ItemGroup Condition="'$(Platform)' == 'x64'">
-    <None Include="build\x64\libzstd.dll">
-      <Link>x64\%(FileName)%(Extension)</Link>
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </None>
-  </ItemGroup>
-  <ItemGroup Condition="'$(Platform)' == 'AnyCPU'">
-    <None Include="build\x64\libzstd.dll">
-      <Link>x64\%(FileName)%(Extension)</Link>
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </None>
-    <None Include="build\x86\libzstd.dll">
-      <Link>x86\%(FileName)%(Extension)</Link>
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </None>
-  </ItemGroup>
 
   <ItemGroup>
     <None Include="zstd.png">
@@ -69,7 +38,24 @@ libzstd version: 1.4.5</PackageReleaseNotes>
   </ItemGroup>
 
   <ItemGroup>
-		<None Include="build\**\*" Pack="true" PackagePath="build\" />
+
+    <None Include="build\libzstd.dll">
+      <Link>%(FileName)%(Extension)</Link>
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Include="build\libzstd.so">
+      <Link>%(FileName)%(Extension)</Link>
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Include="build\libzstd.dylib">
+      <Link>%(FileName)%(Extension)</Link>
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+
+  </ItemGroup>
+
+  <ItemGroup>
+		<None Include="build\*" Pack="true" PackagePath="build\" />
 		<None Include="..\LICENSE" Pack="true" PackagePath="lib\" />
 	</ItemGroup>
 
