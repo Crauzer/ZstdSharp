@@ -30,16 +30,3 @@ jobs:
       run: dotnet build ZstdSharp --configuration Release --no-restore
     - name: Test
       run: dotnet test ZstdSharp.Tests --verbosity normal
-    - name: Publish
-      if: success()
-      run: dotnet publish --no-build -c Release -o release
-    - name: Create Release Zip 
-      run : zip -r ZstdSharp-release.zip ./release
-    - name: Release via Automatic Release
-      uses: "marvinpinto/action-automatic-releases@latest"
-      with:
-        repo_token: "${{ secrets.GITHUB_TOKEN }}"
-        automatic_release_tag: "latest"
-        prerelease: false
-        files: |
-          ZstdSharp-release.zip
