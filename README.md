@@ -4,6 +4,8 @@
 
 ZstdSharp is a wrapper for the [native Zstandard library](https://github.com/facebook/zstd).
 
+**Disclaimer: ZstdSharp is x64 only**
+
 Features:
 * Provides functions for immediate compression and decompression of data (Simple API)
 * Streaming
