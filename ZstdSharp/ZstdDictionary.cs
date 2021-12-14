@@ -21,10 +21,12 @@ namespace ZstdSharp
         }
         public ZstdDictionary(Stream dictionaryStream)
         {
+            this._dictionaryBuffer = new byte[dictionaryStream.Length];
             dictionaryStream.Read(this._dictionaryBuffer, 0, (int)dictionaryStream.Length);
         }
         public ZstdDictionary(Stream dictionaryStream, int offset, int size)
         {
+            this._dictionaryBuffer = new byte[dictionaryStream.Length];
             dictionaryStream.Read(this._dictionaryBuffer, offset, size);
         }
 
